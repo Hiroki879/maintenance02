@@ -2,6 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine, Column, String, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+import os
 
 # 0.環境変数から接続情報を読み込む
 DB_USER = os.getenv("DB_USER", "jun") 
@@ -11,8 +12,8 @@ DB_PORT = os.getenv("DB_PORT", 5432)
 DB_NAME = os.getenv("DB_NAME", "adobepub_dev")
 
 # 1. データベース接続設定
-DATABASE_URL = "postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(DATABASE_URL)
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # 2. テーブルに対応するPythonクラス（モデル）を定義
@@ -24,8 +25,7 @@ class Segment(Base):
 
     segment_id = Column(String(100), primary_key=True)
     segment_name = Column(String(255))
-    is_active = Column(Boolean, default=True) # is_activeカラムも定義
-
+   
 # 3. マスターCSVファイルを読み込む
 try:
     df = pd.read_csv('segment_master.csv')
@@ -45,9 +45,7 @@ try:
             # 既に存在する場合、名前を更新する（Pythonオブジェクトの属性を書き換えるだけ！）
             print(f"Updating: {row['segment_id']}")
             segment.segment_name = row['segment_name']
-            # is_activeカラムがあればそれも更新
-            if 'is_active' in row:
-                segment.is_active = row['is_active']
+           
         else:
             # --- INSERT処理 ---
             # 存在しない場合、新しいオブジェクトを作成してセッションに追加する
@@ -55,7 +53,6 @@ try:
             new_segment = Segment(
                 segment_id=row['segment_id'],
                 segment_name=row['segment_name'],
-                is_active=row.get('is_active', True) # is_activeがなければTrue
             )
             session.add(new_segment)
     
