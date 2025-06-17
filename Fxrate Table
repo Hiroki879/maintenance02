@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import create_engine, Column, String, Boolean
+from sqlalchemy import create_engine, Column, String, Boolean, Integer, Float
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import os
@@ -19,18 +19,19 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # 2. テーブルに対応するPythonクラス（モデル）を定義
 Base = declarative_base()
 
-class Segment(Base):
-    __tablename__ = 'Segment'  # DBのテーブル名
+class FxRate(Base):
+    __tablename__ = 'FxRate'  # DBのテーブル名
     __table_args__ = {'schema': 'master'} # スキーマを指定
 
-    segment_id = Column(String(100), primary_key=True)
-    segment_name = Column(String(255))
+    fx_id = Column(String(100), primary_key=True)
+    fiscal_year = Column(Integer)
+    usd_jpy_rate = Column(Float)
    
 # 3. マスターCSVファイルを読み込む
 try:
-    df = pd.read_csv('segment_master.csv')
+    df = pd.read_csv('fxrate_master.csv')
 except FileNotFoundError:
-    print("エラー: segment_master.csv が見つかりません。")
+    print("エラー: fxrate_master.csv が見つかりません。")
     exit()
 
 # 4. セッションを開始して同期処理を実行
@@ -38,27 +39,29 @@ session = SessionLocal()
 try:
     for index, row in df.iterrows():
         # CSVのIDをキーに、DBから既存のセグメントを検索
-        segment = session.query(Segment).filter(Segment.segment_id == row['segment_id']).first()
+        segment = session.query(FxRate).filter(FxRate.fx_id == row['fx_id']).first()
 
         if segment:
             # --- UPDATE処理 ---
             # 既に存在する場合、名前を更新する（Pythonオブジェクトの属性を書き換えるだけ！）
-            print(f"Updating: {row['segment_id']}")
-            segment.segment_name = row['segment_name']
+            print(f"Updating: {row['fx_id']}")
+            segment.fiscal_year = row['fiscal_year']
+            segment.usd_jpy_rate = row['usd_jpy_rate']
            
         else:
             # --- INSERT処理 ---
             # 存在しない場合、新しいオブジェクトを作成してセッションに追加する
-            print(f"Inserting: {row['segment_id']}")
-            new_segment = Segment(
-                segment_id=row['segment_id'],
-                segment_name=row['segment_name'],
+            print(f"Inserting: {row['fx_id']}")
+            new_segment = FxRate(
+                fx_id=row['fx_id'],
+                fiscal_year = row['fiscal_year'],
+                usd_jpy_rate = row['usd_jpy_rate'],
             )
             session.add(new_segment)
     
     # 5. すべての変更をまとめてデータベースにコミット（書き込み）
     session.commit()
-    print("Segmentテーブルの同期が完了しました。")
+    print("FxRateテーブルの同期が完了しました。")
 
 except Exception as e:
     # エラーが発生した場合、すべての変更をロールバック（キャンセル）
