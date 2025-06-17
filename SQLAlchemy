@@ -3,6 +3,13 @@ from sqlalchemy import create_engine, Column, String, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
+# 0.環境変数から接続情報を読み込む
+DB_USER = os.getenv("DB_USER", "jun") 
+DB_PASSWORD = os.getenv("DB_PASSWORD", "Pub1234Adobe")
+DB_HOST = os.getenv("DB_HOST", "157.230.251.229")
+DB_PORT = os.getenv("DB_PORT", 5432)
+DB_NAME = os.getenv("DB_NAME", "adobepub_dev")
+
 # 1. データベース接続設定
 DATABASE_URL = "postgresql://your_user:your_password@your_host/your_db"
 engine = create_engine(DATABASE_URL)
